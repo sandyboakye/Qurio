@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+    /* CSS trick to hide browser headers/footers */
+  }
+
+  html {
+    font-size: 12px;
+  }
+
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+
+    /* Layout Logic */
+    margin: 0 !important;
+    padding: 15mm !important;
+    /* Manual margin */
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+
+    /* Scale to fit */
+    transform: scale(0.9);
+    transform-origin: top left;
+    width: 111%;
+  }
+
+  /* Layout Cleanups */
+  .fixed,
+  nav,
+  aside,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Main Container Override */
+  .max-w-6xl {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  /* Helper Classes */
+  .print\:hidden {
+    display: none !important;
+  }
+
+  .print\:grid {
+    display: grid !important;
+  }
+
+  .print\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  .print\:col-span-2 {
+    grid-column: span 2 !important;
+  }
+
+  .print\:col-span-1 {
+    grid-column: span 1 !important;
+  }
+
+  /* Override padding utilities */
+  .pl-64 {
+    padding-left: 0 !important;
+    margin: 0 !important;
+  }
+
+  .gap-6 {
+    gap: 1.5rem !important;
+  }
+
+  /* Force rounded corners to look sharp */
+  .rounded-2xl {
+    border: 1px solid #cbd5e1 !important;
+  }
+
+  /* Make Grid tighter */
+  .gap-6 {
+    gap: 1rem !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+
+  .p-6 {
+    padding: 1rem !important;
+  }
+
+  /* Prevent Breakers */
+  .rounded-2xl {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Chart sizes for print */
+  .h-\[300px\],
+  .h-\[250px\] {
+    height: 180px !important;
+  }
+
+  .h-\[200px\] {
+    height: 140px !important;
+  }
+
+  /* Hide interactive elements */
+  .cursor-pointer {
+    cursor: default !important;
+  }
+
+  /* Hide "View Details" text */
+  .text-indigo-500.flex {
+    display: none !important;
+  }
+
+  /* Expand charts to fill page nicely */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
