@@ -1,90 +1,79 @@
 const express = require('express');
 const QRCode = require('qrcode');
 const { createCanvas, loadImage } = require('canvas');
-const { db } = require('../database/init');
+const db = require('../database/db'); // Knex instance
 const multer = require('multer');
 const { parse } = require('csv-parse/sync');
 const archiver = require('archiver');
 const { v4: uuidv4 } = require('uuid');
+const { authenticateToken } = require('../middleware/auth');
+
 const router = express.Router();
+
+// Protect all QR routes
+router.use(authenticateToken);
 
 // Multer Setup
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper: Generate Short Code
-const generateShortCode = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-};
+// Helpers
+const generateShortCode = () => uuidv4().slice(0, 8);
 
-// Helper: Generate QR Image (with optional logo)
-const generateQRWithLogo = async (text, colorDark, colorLight, logoUrl) => {
-    try {
-        // 1. Generate base QR as Data URL
-        const qrDataUrl = await QRCode.toDataURL(text, {
-            width: 400,
-            margin: 1,
-            color: {
-                dark: colorDark,
-                light: colorLight
-            },
-            errorCorrectionLevel: 'H' // High error correction for logo
-        });
-
-        // If no logo, return standard QR
-        if (!logoUrl) return qrDataUrl;
-
-        // 2. Composite Logo
-        const canvas = createCanvas(400, 400);
-        const ctx = canvas.getContext('2d');
-
-        // Load QR
-        const qrImage = await loadImage(qrDataUrl);
-        ctx.drawImage(qrImage, 0, 0, 400, 400);
-
-        // Load Logo (handle base64 or url)
-        // If logoUrl is a data string, loadImage works.
-        const logo = await loadImage(logoUrl);
-
-        // Calculate logo size (e.g., 20% of QR size)
-        const logoSize = 80;
-        const logoX = (400 - logoSize) / 2;
-        const logoY = (400 - logoSize) / 2;
-
-        // Draw white background for logo (optional, for visibility)
-        ctx.fillStyle = colorLight;
-        // Circular or Square background? Square for now.
-        // ctx.fillRect(logoX - 5, logoY - 5, logoSize + 10, logoSize + 10);
-
-        // Draw Logo
-        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
-
-        return canvas.toDataURL(); // Returns "data:image/png;base64,..."
-    } catch (err) {
-        console.error("QR Generation Error:", err);
-        throw err;
-    }
-};
-
-// Helper to generate QR Buffer (for bulk download)
-async function generateQRBuffer(url, colorDark = '#000000', colorLight = '#ffffff') {
-    return await QRCode.toBuffer(url, {
+const generateQRBuffer = async (text, colorDark = '#000000', colorLight = '#ffffff') => {
+    return await QRCode.toBuffer(text, {
         color: {
             dark: colorDark,
             light: colorLight
         },
         width: 300,
-        margin: 2
+        margin: 1
     });
-}
+};
+
+const generateQRWithLogo = async (text, colorDark, colorLight, logoBase64) => {
+    const qrBuffer = await QRCode.toBuffer(text, {
+        color: {
+            dark: colorDark,
+            light: colorLight
+        },
+        width: 300,
+        margin: 1,
+        errorCorrectionLevel: 'H'
+    });
+
+    if (!logoBase64) {
+        return `data:image/png;base64,${qrBuffer.toString('base64')}`;
+    }
+
+    try {
+        const canvas = createCanvas(300, 300);
+        const ctx = canvas.getContext('2d');
+        const qrImage = await loadImage(qrBuffer);
+
+        ctx.drawImage(qrImage, 0, 0, 300, 300);
+
+        const logo = await loadImage(logoBase64);
+        const logoSize = 60;
+        const logoPos = (300 - logoSize) / 2;
+
+        ctx.fillStyle = colorLight || '#ffffff';
+        ctx.fillRect(logoPos - 2, logoPos - 2, logoSize + 4, logoSize + 4);
+
+        ctx.drawImage(logo, logoPos, logoPos, logoSize, logoSize);
+        return canvas.toDataURL();
+    } catch (e) {
+        console.warn("Invalid logo image, returning basic QR:", e.message);
+        return `data:image/png;base64,${qrBuffer.toString('base64')}`;
+    }
+};
 
 // Bulk Create QR Codes
 router.post('/bulk', upload.single('file'), async (req, res) => {
     try {
+        if (req.user.role !== 'admin' && !req.user.has_enterprise) {
+            return res.status(403).json({ error: 'Enterprise feature. Please upgrade.' });
+        }
+
         if (!req.file) return res.status(400).json({ error: 'No CSV file uploaded' });
 
         const records = parse(req.file.buffer, { columns: true, skip_empty_lines: true });
@@ -95,38 +84,46 @@ router.post('/bulk', upload.single('file'), async (req, res) => {
         archive.pipe(res);
 
         const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
+        const userId = req.user.id;
+
+        const qrInserts = [];
 
         for (const row of records) {
             const name = row.name || 'Untitled QR';
             const targetUrl = row.target_url;
-            if (!targetUrl) continue; // Skip invalid rows
+            if (!targetUrl) continue;
 
             const colorDark = row.color_dark || '#000000';
             const colorLight = row.color_light || '#ffffff';
 
-            const shortCode = uuidv4().slice(0, 8); // Simple unique code
+            const shortCode = uuidv4().slice(0, 8);
             const redirectUrl = `${baseUrl}/r/${shortCode}`;
 
-            // Generate QR Image Buffer
             const qrBuffer = await generateQRBuffer(redirectUrl, colorDark, colorLight);
 
-            // Add to Zip
             const safeName = name.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
             archive.append(qrBuffer, { name: `${safeName}_${shortCode}.png` });
 
-            // Insert into Database
-            await new Promise((resolve, reject) => {
-                const sql = `INSERT INTO qr_codes (short_code, name, original_url, current_url, qr_image_url, color_dark, color_light, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`;
-                const base64Img = `data:image/png;base64,${qrBuffer.toString('base64')}`;
-
-                // Using db.run from imported db object which is usually the db instance directly or a wrapper?
-                // The import was `const { db } = require('../database/init');` 
-                // Let's assume db.run exists.
-                db.run(sql, [shortCode, name, targetUrl, targetUrl, base64Img, colorDark, colorLight], (err) => {
-                    if (err) console.error("Bulk Insert Error", err);
-                    resolve();
-                });
+            qrInserts.push({
+                short_code: shortCode,
+                name: name,
+                original_url: targetUrl,
+                current_url: targetUrl,
+                qr_image_url: `data:image/png;base64,${qrBuffer.toString('base64')}`,
+                color_dark: colorDark,
+                color_light: colorLight,
+                user_id: userId,
+                created_at: db.fn.now()
             });
+        }
+
+        // Bulk insert capable
+        if (qrInserts.length > 0) {
+            // Chunk inserts to avoid query size limits
+            const chunkSize = 50;
+            for (let i = 0; i < qrInserts.length; i += chunkSize) {
+                await db('qr_codes').insert(qrInserts.slice(i, i + chunkSize));
+            }
         }
 
         await archive.finalize();
@@ -143,36 +140,55 @@ router.post('/create', async (req, res) => {
         const { name, url, colorDark = '#000000', colorLight = '#ffffff', logoImage } = req.body;
         if (!name || !url) return res.status(400).json({ error: 'Name and URL required' });
 
+        // Enforce Limits
+        if (req.user.role !== 'admin') {
+            const limit = req.user.max_qrs || 10;
+            const countResult = await db('qr_codes')
+                .where({ user_id: req.user.id })
+                .count('id as count')
+                .first();
+
+            const currentCount = parseInt(countResult.count);
+
+            if (currentCount >= limit) {
+                return res.status(403).json({ error: `Limit reached (${limit} QRs). Contact Admin to upgrade.` });
+            }
+        }
+
         const shortCode = generateShortCode();
         const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:3001';
         const redirectUrl = `${baseUrl}/r/${shortCode}`;
 
-        // Generate QR Image (Base64) with Custom Colors & Logo
         const qrDataUrl = await generateQRWithLogo(redirectUrl, colorDark, colorLight, logoImage);
 
-        const stmt = db.prepare(`
-            INSERT INTO qr_codes (short_code, name, original_url, current_url, qr_image_url, color_dark, color_light, logo_image)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
+        const [id] = await db('qr_codes').insert({
+            short_code: shortCode,
+            name,
+            original_url: url,
+            current_url: url,
+            qr_image_url: qrDataUrl,
+            color_dark: colorDark,
+            color_light: colorLight,
+            logo_image: logoImage,
+            user_id: req.user.id,
+            created_at: db.fn.now()
+        }).returning('id'); // .returning() works for PG, for Sqlite knex handles getting [id] back
 
-        stmt.run([shortCode, name, url, url, qrDataUrl, colorDark, colorLight, logoImage], function (err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'DB Error' });
-            }
-            res.json({
-                id: this.lastID,
-                shortCode,
-                name,
-                currentUrl: url,
-                qrImageUrl: qrDataUrl,
-                scanCount: 0,
-                colorDark,
-                colorLight,
-                logoImage
-            });
+        // If SQLite returns an object with result property, we handle it automatically usually
+        // But destruct ring [id] is safe for modern knex sqlite3/pg.
+
+        res.json({
+            id: typeof id === 'object' ? id.id : id, // Handle varied return formats carefully
+            shortCode,
+            name,
+            currentUrl: url,
+            qrImageUrl: qrDataUrl,
+            scanCount: 0,
+            colorDark,
+            colorLight,
+            logoImage,
+            userId: req.user.id
         });
-        stmt.finalize();
 
     } catch (e) {
         console.error(e);
@@ -181,9 +197,11 @@ router.post('/create', async (req, res) => {
 });
 
 // List QRs
-router.get('/', (req, res) => {
-    db.all(`SELECT * FROM qr_codes ORDER BY created_at DESC`, (err, rows) => {
-        if (err) return res.status(500).json({ error: 'DB Error' });
+router.get('/', async (req, res) => {
+    try {
+        const rows = await db('qr_codes')
+            .where({ user_id: req.user.id })
+            .orderBy('created_at', 'desc');
 
         const qrs = rows.map(row => ({
             id: row.id,
@@ -200,221 +218,242 @@ router.get('/', (req, res) => {
         }));
 
         res.json(qrs);
-    });
+    } catch (e) {
+        console.error('List Error', e);
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 // Update QR
-// Update QR
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
     const { id } = req.params;
     const { currentUrl, isActive, colorDark, colorLight, logoImage } = req.body;
 
-    // First fetch existing to get shortCode (needed for regeneration)
-    db.get('SELECT * FROM qr_codes WHERE id = ?', [id], async (err, row) => {
-        if (err) return res.status(500).json({ error: 'DB Error' });
-        if (!row) return res.status(404).json({ error: 'QR Code not found' });
+    try {
+        const row = await db('qr_codes')
+            .where({ id, user_id: req.user.id })
+            .first();
 
-        try {
-            let updates = [];
-            let params = [];
+        if (!row) return res.status(404).json({ error: 'QR Code not found or access denied' });
 
-            // Determine if we need to regenerate
-            const newColorDark = colorDark || row.color_dark;
-            const newColorLight = colorLight || row.color_light;
-            const newLogoImage = (logoImage !== undefined) ? logoImage : row.logo_image; // Handle removal if empty string passed?
+        const updates = {};
+        const newColorDark = colorDark || row.color_dark;
+        const newColorLight = colorLight || row.color_light;
+        const newLogoImage = (logoImage !== undefined) ? logoImage : row.logo_image;
 
-            const shouldRegenerate = (colorDark && colorDark !== row.color_dark) ||
-                (colorLight && colorLight !== row.color_light) ||
-                (logoImage !== undefined && logoImage !== row.logo_image);
+        const shouldRegenerate = (colorDark && colorDark !== row.color_dark) ||
+            (colorLight && colorLight !== row.color_light) ||
+            (logoImage !== undefined && logoImage !== row.logo_image);
 
-            if (shouldRegenerate) {
-                const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:3001`;
-                const redirectUrl = `${baseUrl}/r/${row.short_code}`;
-
-                const qrDataUrl = await generateQRWithLogo(redirectUrl, newColorDark, newColorLight, newLogoImage);
-
-                updates.push('qr_image_url = ?');
-                params.push(qrDataUrl);
-            }
-
-            // Standard updates
-            if (currentUrl) { updates.push('current_url = ?'); params.push(currentUrl); }
-            if (isActive !== undefined) { updates.push('is_active = ?'); params.push(isActive ? 1 : 0); }
-            if (colorDark) { updates.push('color_dark = ?'); params.push(colorDark); }
-            if (colorLight) { updates.push('color_light = ?'); params.push(colorLight); }
-            if (logoImage !== undefined) { updates.push('logo_image = ?'); params.push(logoImage); }
-
-            if (updates.length > 0) {
-                params.push(id);
-                db.run(`UPDATE qr_codes SET ${updates.join(', ')} WHERE id = ?`, params, function (err) {
-                    if (err) return res.status(500).json({ error: 'DB Error' });
-                    res.json({ success: true, changes: this.changes });
-                });
-            } else {
-                res.json({ success: true, message: 'No changes' });
-            }
-
-        } catch (e) {
-            console.error("Update Error", e);
-            res.status(500).json({ error: 'Update Failed' });
+        if (shouldRegenerate) {
+            const baseUrl = process.env.PUBLIC_BASE_URL || `http://localhost:3001`;
+            const redirectUrl = `${baseUrl}/r/${row.short_code}`;
+            const qrDataUrl = await generateQRWithLogo(redirectUrl, newColorDark, newColorLight, newLogoImage);
+            updates.qr_image_url = qrDataUrl;
         }
-    });
+
+        if (currentUrl) updates.current_url = currentUrl;
+        if (isActive !== undefined) updates.is_active = isActive ? 1 : 0;
+        if (colorDark) updates.color_dark = colorDark;
+        if (colorLight) updates.color_light = colorLight;
+        if (logoImage !== undefined) updates.logo_image = logoImage;
+
+        if (Object.keys(updates).length > 0) {
+            await db('qr_codes')
+                .where({ id, user_id: req.user.id })
+                .update(updates);
+            res.json({ success: true });
+        } else {
+            res.json({ success: true, message: 'No changes' });
+        }
+    } catch (e) {
+        console.error("Update Error", e);
+        res.status(500).json({ error: 'Update Failed' });
+    }
 });
 
 // Delete QR
-router.delete('/:id', (req, res) => {
-    const { id } = req.params;
-    db.run('DELETE FROM qr_codes WHERE id = ?', [id], function (err) {
-        if (err) return res.status(500).json({ error: 'DB Error' });
+router.delete('/:id', async (req, res) => {
+    try {
+        const count = await db('qr_codes')
+            .where({ id: req.params.id, user_id: req.user.id })
+            .del();
+
+        if (count === 0) return res.status(404).json({ error: 'QR Code not found or access denied' });
         res.json({ success: true });
-    });
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 // Export Single QR Analytics
-router.get('/:id/export', (req, res) => {
-    const { id } = req.params;
-    const query = `
-        SELECT scanned_at, ip_address, country, city, device_type, browser, os 
-        FROM scans 
-        WHERE qr_code_id = ? 
-        ORDER BY scanned_at DESC
-    `;
+router.get('/:id/export', async (req, res) => {
+    try {
+        const row = await db('qr_codes')
+            .where({ id: req.params.id, user_id: req.user.id })
+            .select('id')
+            .first();
 
-    db.all(query, [id], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'DB Error' });
+        if (!row) return res.status(403).json({ error: 'Access denied' });
+
+        const rows = await db('scans')
+            .where({ qr_code_id: req.params.id })
+            .orderBy('scanned_at', 'desc')
+            .select('scanned_at', 'ip_address', 'country', 'city', 'device_type', 'browser', 'os');
+
         res.json(rows);
-    });
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
-// Get Analytics Stats
-router.get('/:id/stats', (req, res) => {
+// Get Analytics Stats (Single QR)
+router.get('/:id/stats', async (req, res) => {
     const { id } = req.params;
 
-    const queries = {
-        scansOverTime: `
-            SELECT date(scanned_at) as date, count(*) as count 
-            FROM scans 
-            WHERE qr_code_id = ? 
-            GROUP BY date(scanned_at) 
-            ORDER BY date DESC 
-            LIMIT 7
-        `,
-        deviceDistribution: `
-            SELECT device_type, count(*) as count 
-            FROM scans 
-            WHERE qr_code_id = ? 
-            GROUP BY device_type
-        `,
-        osDistribution: `
-            SELECT os, count(*) as count 
-            FROM scans 
-            WHERE qr_code_id = ? 
-            GROUP BY os
-        `
-    };
+    try {
+        const row = await db('qr_codes')
+            .where({ id, user_id: req.user.id })
+            .select('id')
+            .first();
 
-    const stats = {};
+        if (!row) return res.status(403).json({ error: 'Access denied' });
 
-    // Execute sequentially for simplicity
-    db.all(queries.scansOverTime, [id], (err, dates) => {
-        if (err) return res.status(500).json({ error: 'DB Error' });
-        stats.scansOverTime = dates.reverse(); // Show chronological
+        // Parallel Queries
+        const [scansOverTime, deviceDistribution, osDistribution] = await Promise.all([
+            db('scans')
+                .select(db.raw('date(scanned_at) as date'), db.raw('count(*) as count'))
+                .where({ qr_code_id: id })
+                .groupByRaw('date(scanned_at)')
+                .orderBy('date', 'desc')
+                .limit(7),
 
-        db.all(queries.deviceDistribution, [id], (err, devices) => {
-            if (err) return res.status(500).json({ error: 'DB Error' });
-            stats.deviceDistribution = devices;
+            db('scans')
+                .select('device_type', db.raw('count(*) as count'))
+                .where({ qr_code_id: id })
+                .groupBy('device_type'),
 
-            db.all(queries.osDistribution, [id], (err, os) => {
-                if (err) return res.status(500).json({ error: 'DB Error' });
-                stats.osDistribution = os;
+            db('scans')
+                .select('os', db.raw('count(*) as count'))
+                .where({ qr_code_id: id })
+                .groupBy('os')
+        ]);
 
-                res.json(stats);
-            });
+        res.json({
+            scansOverTime: scansOverTime.reverse(),
+            deviceDistribution,
+            osDistribution
         });
-    });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 // Export All Analytics
-router.get('/analytics/export', (req, res) => {
-    const query = `
-        SELECT s.scanned_at, q.name as qr_name, q.current_url, 
-               s.ip_address, s.country, s.city, s.device_type, s.browser, s.os 
-        FROM scans s 
-        JOIN qr_codes q ON s.qr_code_id = q.id 
-        ORDER BY s.scanned_at DESC
-    `;
+router.get('/analytics/export', async (req, res) => {
+    try {
+        const rows = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', req.user.id)
+            .orderBy('scans.scanned_at', 'desc')
+            .select(
+                'scans.scanned_at',
+                'qr_codes.name as qr_name',
+                'qr_codes.current_url',
+                'scans.ip_address',
+                'scans.country',
+                'scans.city',
+                'scans.device_type',
+                'scans.browser',
+                'scans.os'
+            );
 
-    db.all(query, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'DB Error' });
         res.json(rows);
-    });
+    } catch (e) {
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 // Global Analytics API
-router.get('/analytics/global', (req, res) => {
-    // Parallel Queries
-    const queries = {
-        totalScans: "SELECT COUNT(*) as count FROM scans",
-        totalQRs: "SELECT COUNT(*) as count FROM qr_codes",
-        activeQRs: "SELECT COUNT(*) as count FROM qr_codes WHERE is_active = 1",
+router.get('/analytics/global', async (req, res) => {
+    const userId = req.user.id;
 
-        // Charts (Platform Wide)
-        time: `SELECT date(scanned_at) as date, COUNT(*) as count
-               FROM scans
-               WHERE scanned_at >= date('now', '-30 days')
-               GROUP BY date(scanned_at)
-               ORDER BY date(scanned_at) ASC`,
+    try {
+        const totalScans = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .count('* as count')
+            .first();
 
-        // Time of Day (Hourly) - SQLite syntax
-        hourly: `SELECT strftime('%H', scanned_at) as hour, COUNT(*) as count
-                 FROM scans
-                 GROUP BY hour
-                 ORDER BY hour ASC`,
+        const totalQRs = await db('qr_codes')
+            .where({ user_id: userId })
+            .count('* as count')
+            .first();
 
-        device: "SELECT device_type as name, COUNT(*) as count FROM scans GROUP BY device_type",
-        browser: "SELECT browser as name, COUNT(*) as count FROM scans GROUP BY browser ORDER BY count DESC LIMIT 5",
-        os: "SELECT os as name, COUNT(*) as count FROM scans GROUP BY os ORDER BY count DESC LIMIT 5",
+        const activeQRs = await db('qr_codes')
+            .where({ user_id: userId, is_active: true })
+            .count('* as count')
+            .first();
 
-        // Detail Lists for Popups
-        recentScans: `SELECT s.id, s.scanned_at, s.country, s.city, s.device_type, q.name as qr_name, q.id as qr_id
-                      FROM scans s
-                      JOIN qr_codes q ON s.qr_code_id = q.id
-                      ORDER BY s.scanned_at DESC LIMIT 20`
-    };
+        const timeData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .andWhereRaw("scanned_at >= date('now', '-30 days')")
+            .groupByRaw('date(scanned_at)')
+            .orderByRaw('date(scanned_at) ASC')
+            .select(db.raw('date(scanned_at) as date'), db.raw('count(*) as count'));
 
-    const results = {};
+        const hourlyData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .groupByRaw("strftime('%H', scanned_at)")
+            .orderByRaw("strftime('%H', scanned_at) ASC")
+            .select(db.raw("strftime('%H', scanned_at) as hour"), db.raw('count(*) as count'));
 
-    // Helper for async db.get
-    const get = (query) => new Promise((resolve, reject) => {
-        db.get(query, [], (err, row) => err ? reject(err) : resolve(row));
-    });
+        const deviceData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .groupBy('scans.device_type')
+            .select('scans.device_type as name', db.raw('count(*) as count'));
 
-    // Helper for async db.all
-    const all = (query) => new Promise((resolve, reject) => {
-        db.all(query, [], (err, rows) => err ? reject(err) : resolve(rows));
-    });
+        const browserData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .groupBy('scans.browser')
+            .orderBy('count', 'desc')
+            .limit(5)
+            .select('scans.browser as name', db.raw('count(*) as count'));
 
-    // Execute all
-    Promise.all([
-        get(queries.totalScans),
-        get(queries.totalQRs),
-        get(queries.activeQRs),
-        all(queries.time),
-        all(queries.hourly),
-        all(queries.device),
-        all(queries.browser),
-        all(queries.os),
-        all(queries.recentScans)
-    ]).then(([scanCount, qrCount, activeCount, timeData, hourlyData, deviceData, browserData, osData, recentScansData]) => {
+        const osData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .groupBy('scans.os')
+            .orderBy('count', 'desc')
+            .limit(5)
+            .select('scans.os as name', db.raw('count(*) as count'));
 
-        // Process Hourly Data to ensure all 24h are present (optional, but good for charts)
-        // For simplicity, we pass raw data and frontend handles gaps or existing data is sufficient.
+        const recentScansData = await db('scans')
+            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+            .where('qr_codes.user_id', userId)
+            .orderBy('scans.scanned_at', 'desc')
+            .limit(20)
+            .select(
+                'scans.id',
+                'scans.scanned_at',
+                'scans.country',
+                'scans.city',
+                'scans.device_type',
+                'qr_codes.name as qr_name',
+                'qr_codes.id as qr_id'
+            );
 
         res.json({
             summary: {
-                totalScans: scanCount?.count || 0,
-                totalQRs: qrCount?.count || 0,
-                activeQRs: activeCount?.count || 0
+                totalScans: parseInt(totalScans.count),
+                totalQRs: parseInt(totalQRs.count),
+                activeQRs: parseInt(activeQRs.count)
             },
             charts: {
                 scansOverTime: timeData,
@@ -427,82 +466,58 @@ router.get('/analytics/global', (req, res) => {
                 recentScans: recentScansData
             }
         });
-    }).catch(err => {
-        console.error("Global Analytics Error", err);
+
+    } catch (e) {
+        console.error("Global Analytics Error", e);
         res.status(500).json({ error: 'DB Error' });
-    });
+    }
 });
 
-// Analytics API
-router.get('/:id/analytics', (req, res) => {
+// Analytics API (Single QR)
+router.get('/:id/analytics', async (req, res) => {
     const { id } = req.params;
 
-    // We need multiple aggregations. SQLite doesn't support multiple result sets in one query easily.
-    // We'll run them in parallel.
+    try {
+        const [timeData, deviceData, browserData, osData] = await Promise.all([
+            db('scans')
+                .where({ qr_code_id: id })
+                .andWhereRaw("scanned_at >= date('now', '-30 days')")
+                .groupByRaw('date(scanned_at)')
+                .orderByRaw('date(scanned_at) ASC')
+                .select(db.raw('date(scanned_at) as date'), db.raw('count(*) as count')),
 
-    // 1. Scans Over Time (Last 30 Days)
-    const timeQuery = `
-        SELECT date(scanned_at) as date, COUNT(*) as count 
-        FROM scans 
-        WHERE qr_code_id = ? AND scanned_at >= date('now', '-30 days')
-        GROUP BY date(scanned_at)
-        ORDER BY date(scanned_at) ASC
-    `;
+            db('scans')
+                .where({ qr_code_id: id })
+                .groupBy('device_type')
+                .select('device_type as name', db.raw('count(*) as count')),
 
-    // 2. Device Breakdown
-    const deviceQuery = `
-        SELECT device_type as name, COUNT(*) as count 
-        FROM scans 
-        WHERE qr_code_id = ?
-        GROUP BY device_type
-    `;
+            db('scans')
+                .where({ qr_code_id: id })
+                .groupBy('browser')
+                .orderBy('count', 'desc')
+                .limit(5)
+                .select('browser as name', db.raw('count(*) as count')),
 
-    // 3. Browser Breakdown
-    const browserQuery = `
-        SELECT browser as name, COUNT(*) as count 
-        FROM scans 
-        WHERE qr_code_id = ?
-        GROUP BY browser
-        ORDER BY count DESC
-        LIMIT 5
-    `;
+            db('scans')
+                .where({ qr_code_id: id })
+                .groupBy('os')
+                .orderBy('count', 'desc')
+                .limit(5)
+                .select('os as name', db.raw('count(*) as count'))
+        ]);
 
-    // 4. OS Breakdown
-    const osQuery = `
-        SELECT os as name, COUNT(*) as count 
-        FROM scans 
-        WHERE qr_code_id = ?
-        GROUP BY os
-        ORDER BY count DESC
-        LIMIT 5
-    `;
-
-    db.serialize(() => {
-        db.all(timeQuery, [id], (err, timeData) => {
-            if (err) return res.status(500).json({ error: 'DB Error (Time)' });
-
-            db.all(deviceQuery, [id], (err, deviceData) => {
-                if (err) return res.status(500).json({ error: 'DB Error (Device)' });
-
-                db.all(browserQuery, [id], (err, browserData) => {
-                    if (err) return res.status(500).json({ error: 'DB Error (Browser)' });
-
-                    db.all(osQuery, [id], (err, osData) => {
-                        if (err) return res.status(500).json({ error: 'DB Error (OS)' });
-
-                        // Fill in missing dates for the chart? Frontend can handle logic or we do it here.
-                        // Let's send raw data for now.
-                        res.json({
-                            scansOverTime: timeData,
-                            devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: d.count })), // fallback name
-                            browsers: browserData.map(d => ({ name: d.name, value: d.count })),
-                            os: osData.map(d => ({ name: d.name, value: d.count }))
-                        });
-                    });
-                });
-            });
+        res.json({
+            scansOverTime: timeData,
+            devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: d.count })),
+            browsers: browserData.map(d => ({ name: d.name, value: d.count })),
+            os: osData.map(d => ({ name: d.name, value: d.count }))
         });
-    });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'DB Error' });
+    }
 });
 
 module.exports = router;
+

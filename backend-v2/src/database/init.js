@@ -56,9 +56,69 @@ const initDatabase = () => {
                 os TEXT,
                 referrer TEXT,
                 scanned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (qr_code_id) REFERENCES qr_codes (id)
+                foreign key (qr_code_id) references qr_codes (id)
             )
         `);
+
+        // Users Table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE,
+                password TEXT,
+                role TEXT DEFAULT 'user',
+                is_active INTEGER DEFAULT 1,
+                max_qrs INTEGER DEFAULT 10,
+                has_enterprise INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
+        // Migration: Add user_id to qr_codes if missing
+        db.all("PRAGMA table_info(qr_codes)", (err, rows) => {
+            const hasUserId = rows.some(r => r.name === 'user_id');
+            if (!hasUserId) {
+                db.run("ALTER TABLE qr_codes ADD COLUMN user_id INTEGER", (err) => {
+                    if (err) console.error("Migration Error (user_id):", err);
+                    else console.log("Migration: Added user_id to qr_codes");
+                });
+            }
+        });
+
+        // Migration: Add columns to users if missing
+        db.all("PRAGMA table_info(users)", (err, rows) => {
+            const hasIsActive = rows.some(r => r.name === 'is_active');
+            if (!hasIsActive) {
+                db.run("ALTER TABLE users ADD COLUMN is_active INTEGER DEFAULT 1");
+            }
+
+            const hasMaxQrs = rows.some(r => r.name === 'max_qrs');
+            if (!hasMaxQrs) {
+                db.run("ALTER TABLE users ADD COLUMN max_qrs INTEGER DEFAULT 10", (err) => {
+                    if (!err) console.log("Migration: Added max_qrs to users");
+                });
+            }
+
+            const hasEnterprise = rows.some(r => r.name === 'has_enterprise');
+            if (!hasEnterprise) {
+                db.run("ALTER TABLE users ADD COLUMN has_enterprise INTEGER DEFAULT 0", (err) => {
+                    if (!err) console.log("Migration: Added has_enterprise to users");
+                });
+            }
+        });
+
+        // Index for faster lookups
+        db.run(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+
+        // Migration: Add user_id to qr_codes if missing
+        db.all("PRAGMA table_info(qr_codes)", (err, rows) => {
+            if (err) return console.error("Error checking schema:", err);
+            const hasUserId = rows.some(r => r.name === 'user_id');
+            if (!hasUserId) {
+                console.log("Migrating: Adding user_id to qr_codes...");
+                db.run("ALTER TABLE qr_codes ADD COLUMN user_id INTEGER");
+            }
+        });
 
         db.run(`CREATE INDEX IF NOT EXISTS idx_short_code ON qr_codes(short_code)`);
     });

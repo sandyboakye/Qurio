@@ -3,18 +3,18 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
-const { initDatabase } = require('./database/init');
+// const { initDatabase } = require('./database/init'); // Legacy Removed
+const db = require('./database/db'); // Test/Init connection
 const qrRoutes = require('./routes/qr');
-// const analyticsRoutes = require('./routes/analytics');
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/admin');
+const UAParser = require('ua-parser-js');
 
 const app = express();
 
-// Initialize DB
-initDatabase();
-
 // Middleware
 app.use(helmet({
-    contentSecurityPolicy: false, // Allow data-uri images
+    contentSecurityPolicy: false,
     crossOriginResourcePolicy: false
 }));
 app.use(cors());
@@ -23,18 +23,21 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/qr', qrRoutes);
-// app.use('/api/analytics', analyticsRoutes);
 
 // Redirect Route (Short URL)
-const UAParser = require('ua-parser-js');
-
-// Redirect Route (Short URL)
-const { db } = require('./database/init');
-app.get('/r/:shortCode', (req, res) => {
+app.get('/r/:shortCode', async (req, res) => {
     const { shortCode } = req.params;
-    db.get('SELECT original_url, current_url, id, is_active FROM qr_codes WHERE short_code = ?', [shortCode], (err, row) => {
-        if (err || !row) {
+
+    try {
+        const row = await db('qr_codes')
+            .where({ short_code: shortCode })
+            .select('original_url', 'current_url', 'id', 'is_active')
+            .first();
+
+        if (!row) {
             return res.status(404).send(`
                 <div style="font-family: sans-serif; text-align: center; padding: 50px;">
                     <h1>QR Code Not Found</h1>
@@ -52,44 +55,42 @@ app.get('/r/:shortCode', (req, res) => {
             `);
         }
 
-        // Async analytics logging
-        const ua = UAParser(req.headers['user-agent']);
-        const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress; // Basic IP capture
+        // Async analytics logging (fire and forget somewhat)
+        // We don't await this to keep redirect fast
+        (async () => {
+            try {
+                const ua = UAParser(req.headers['user-agent']);
+                const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+                let deviceType = ua.device.type || 'desktop';
 
-        // Simple Device Classification
-        let deviceType = ua.device.type || 'desktop'; // ua-parser returns undefined for desktop usually
+                await db('qr_codes').where({ id: row.id }).increment('scan_count', 1);
 
-        db.serialize(() => {
-            // 1. Increment total scan count
-            db.run('UPDATE qr_codes SET scan_count = scan_count + 1 WHERE id = ?', [row.id]);
-
-            // 2. Log detailed scan
-            const stmt = db.prepare(`
-                INSERT INTO scans (qr_code_id, ip_address, user_agent, device_type, country, browser, os)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `);
-
-            // Note: Country/City would require a GeoIP lookup service (e.g. maxmind), skipping for local dev ease or adding later.
-            // Storing 'local' or formatted string for now.
-            stmt.run([
-                row.id,
-                ip,
-                req.headers['user-agent'],
-                deviceType,
-                'Unknown', // GeoIP placeholder
-                ua.browser.name || 'Unknown',
-                ua.os.name || 'Unknown'
-            ]);
-            stmt.finalize();
-        });
+                await db('scans').insert({
+                    qr_code_id: row.id,
+                    ip_address: ip,
+                    user_agent: req.headers['user-agent'],
+                    device_type: deviceType,
+                    country: 'Unknown',
+                    browser: ua.browser.name || 'Unknown',
+                    os: ua.os.name || 'Unknown',
+                    scanned_at: db.fn.now()
+                });
+            } catch (err) {
+                console.error("Analytics Log Error", err);
+            }
+        })();
 
         res.redirect(row.current_url);
-    });
+
+    } catch (e) {
+        console.error("Redirect Error", e);
+        res.status(500).send("Server Error");
+    }
 });
 
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'OK', version: '2.0.0' });
+    res.json({ status: 'OK', version: '2.0.0', db: 'Knex' });
 });
 
 module.exports = app;
