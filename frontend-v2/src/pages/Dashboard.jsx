@@ -30,7 +30,7 @@ export default function Dashboard() {
     const { data: qrs, isLoading: isLoadingQrs } = useQuery({
         queryKey: ['qrs'],
         queryFn: async () => {
-            const res = await axios.get(`${API_URL}/api/qr`);
+            const res = await axios.get(`${API_URL}/api/qr?limit=5`);
             return res.data;
         }
     });

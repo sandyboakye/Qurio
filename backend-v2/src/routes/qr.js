@@ -199,9 +199,19 @@ router.post('/create', async (req, res) => {
 // List QRs
 router.get('/', async (req, res) => {
     try {
-        const rows = await db('qr_codes')
+        const { limit, offset } = req.query;
+
+        let query = db('qr_codes')
             .where({ user_id: req.user.id })
             .orderBy('created_at', 'desc');
+
+        if (limit) query = query.limit(parseInt(limit));
+        if (offset) query = query.offset(parseInt(offset));
+
+        // Optimization: If listing many, maybe exclude the huge image URL unless needed?
+        // But frontend assumes it exists. We'll leave it for now, relying on 'limit' to reduce load.
+        
+        const rows = await query;
 
         const qrs = rows.map(row => ({
             id: row.id,
@@ -379,88 +389,116 @@ router.get('/analytics/export', async (req, res) => {
 // Global Analytics API
 router.get('/analytics/global', async (req, res) => {
     const userId = req.user.id;
+    const isPg = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
 
     try {
-        const totalScans = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .count('* as count')
-            .first();
+        // Prepare raw queries based on dialect
+        const last30Days = isPg ? "NOW() - INTERVAL '30 days'" : "date('now', '-30 days')";
+        const dateSelect = isPg ? "TO_CHAR(scanned_at, 'YYYY-MM-DD')" : "date(scanned_at)";
+        const hourSelect = isPg ? "TO_CHAR(scanned_at, 'HH24')" : "strftime('%H', scanned_at)";
+        const dateGroup = isPg ? "TO_CHAR(scanned_at, 'YYYY-MM-DD')" : "date(scanned_at)";
 
-        const totalQRs = await db('qr_codes')
-            .where({ user_id: userId })
-            .count('* as count')
-            .first();
+        const [
+            totalScans,
+            totalQRs,
+            activeQRs,
+            timeData,
+            hourlyData,
+            deviceData,
+            browserData,
+            osData,
+            recentScansData
+        ] = await Promise.all([
+            // 1. Total Scans
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .count('* as count')
+                .first(),
 
-        const activeQRs = await db('qr_codes')
-            .where({ user_id: userId, is_active: true })
-            .count('* as count')
-            .first();
+            // 2. Total QRs
+            db('qr_codes')
+                .where({ user_id: userId })
+                .count('* as count')
+                .first(),
 
-        const timeData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .andWhereRaw("scanned_at >= date('now', '-30 days')")
-            .groupByRaw('date(scanned_at)')
-            .orderByRaw('date(scanned_at) ASC')
-            .select(db.raw('date(scanned_at) as date'), db.raw('count(*) as count'));
+            // 3. Active QRs
+            db('qr_codes')
+                .where({ user_id: userId, is_active: true })
+                .count('* as count')
+                .first(),
 
-        const hourlyData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .groupByRaw("strftime('%H', scanned_at)")
-            .orderByRaw("strftime('%H', scanned_at) ASC")
-            .select(db.raw("strftime('%H', scanned_at) as hour"), db.raw('count(*) as count'));
+            // 4. Scans Over Time
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .andWhereRaw(`scanned_at >= ${last30Days}`)
+                .groupByRaw(dateGroup)
+                .orderByRaw(`${dateGroup} ASC`)
+                .select(db.raw(`${dateSelect} as date`), db.raw('count(*) as count')),
 
-        const deviceData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .groupBy('scans.device_type')
-            .select('scans.device_type as name', db.raw('count(*) as count'));
+            // 5. Hourly Activity
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .groupByRaw(hourSelect)
+                .orderByRaw(`${hourSelect} ASC`)
+                .select(db.raw(`${hourSelect} as hour`), db.raw('count(*) as count')),
 
-        const browserData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .groupBy('scans.browser')
-            .orderBy('count', 'desc')
-            .limit(5)
-            .select('scans.browser as name', db.raw('count(*) as count'));
+            // 6. Device Type
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .groupBy('scans.device_type')
+                .select('scans.device_type as name', db.raw('count(*) as count')),
 
-        const osData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .groupBy('scans.os')
-            .orderBy('count', 'desc')
-            .limit(5)
-            .select('scans.os as name', db.raw('count(*) as count'));
+            // 7. Browser
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .groupBy('scans.browser')
+                .orderBy('count', 'desc')
+                .limit(5)
+                .select('scans.browser as name', db.raw('count(*) as count')),
 
-        const recentScansData = await db('scans')
-            .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
-            .where('qr_codes.user_id', userId)
-            .orderBy('scans.scanned_at', 'desc')
-            .limit(20)
-            .select(
-                'scans.id',
-                'scans.scanned_at',
-                'scans.country',
-                'scans.city',
-                'scans.device_type',
-                'qr_codes.name as qr_name',
-                'qr_codes.id as qr_id'
-            );
+            // 8. OS
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .groupBy('scans.os')
+                .orderBy('count', 'desc')
+                .limit(5)
+                .select('scans.os as name', db.raw('count(*) as count')),
+
+            // 9. Recent Scans
+            db('scans')
+                .join('qr_codes', 'scans.qr_code_id', 'qr_codes.id')
+                .where('qr_codes.user_id', userId)
+                .orderBy('scans.scanned_at', 'desc')
+                .limit(20)
+                .select(
+                    'scans.id',
+                    'scans.scanned_at',
+                    'scans.country',
+                    'scans.city',
+                    'scans.device_type',
+                    'qr_codes.name as qr_name',
+                    'qr_codes.id as qr_id'
+                )
+        ]);
 
         res.json({
             summary: {
-                totalScans: parseInt(totalScans.count),
-                totalQRs: parseInt(totalQRs.count),
-                activeQRs: parseInt(activeQRs.count)
+                totalScans: parseInt(totalScans?.count || 0),
+                totalQRs: parseInt(totalQRs?.count || 0),
+                activeQRs: parseInt(activeQRs?.count || 0)
             },
             charts: {
                 scansOverTime: timeData,
-                scansByHour: hourlyData.map(h => ({ hour: parseInt(h.hour), count: h.count })),
-                devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: d.count })),
-                browsers: browserData.map(d => ({ name: d.name, value: d.count })),
-                os: osData.map(d => ({ name: d.name, value: d.count }))
+                scansByHour: hourlyData.map(h => ({ hour: parseInt(h.hour), count: parseInt(h.count) })),
+                devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: parseInt(d.count) })),
+                browsers: browserData.map(d => ({ name: d.name, value: parseInt(d.count) })),
+                os: osData.map(d => ({ name: d.name, value: parseInt(d.count) }))
             },
             lists: {
                 recentScans: recentScansData
@@ -476,15 +514,20 @@ router.get('/analytics/global', async (req, res) => {
 // Analytics API (Single QR)
 router.get('/:id/analytics', async (req, res) => {
     const { id } = req.params;
+    const isPg = db.client.config.client === 'postgresql' || db.client.config.client === 'pg';
+
+    const last30Days = isPg ? "NOW() - INTERVAL '30 days'" : "date('now', '-30 days')";
+    const dateSelect = isPg ? "TO_CHAR(scanned_at, 'YYYY-MM-DD')" : "date(scanned_at)";
+    const dateGroup = isPg ? "TO_CHAR(scanned_at, 'YYYY-MM-DD')" : "date(scanned_at)";
 
     try {
         const [timeData, deviceData, browserData, osData] = await Promise.all([
             db('scans')
                 .where({ qr_code_id: id })
-                .andWhereRaw("scanned_at >= date('now', '-30 days')")
-                .groupByRaw('date(scanned_at)')
-                .orderByRaw('date(scanned_at) ASC')
-                .select(db.raw('date(scanned_at) as date'), db.raw('count(*) as count')),
+                .andWhereRaw(`scanned_at >= ${last30Days}`)
+                .groupByRaw(dateGroup)
+                .orderByRaw(`${dateGroup} ASC`)
+                .select(db.raw(`${dateSelect} as date`), db.raw('count(*) as count')),
 
             db('scans')
                 .where({ qr_code_id: id })
@@ -508,9 +551,9 @@ router.get('/:id/analytics', async (req, res) => {
 
         res.json({
             scansOverTime: timeData,
-            devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: d.count })),
-            browsers: browserData.map(d => ({ name: d.name, value: d.count })),
-            os: osData.map(d => ({ name: d.name, value: d.count }))
+            devices: deviceData.map(d => ({ name: d.name || 'Desktop', value: parseInt(d.count) })),
+            browsers: browserData.map(d => ({ name: d.name, value: parseInt(d.count) })),
+            os: osData.map(d => ({ name: d.name, value: parseInt(d.count) }))
         });
 
     } catch (e) {
