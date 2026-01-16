@@ -23,13 +23,14 @@ router.post('/register', async (req, res) => {
         const [id] = await db('users').insert({
             email,
             password: hashedPassword,
-            role
+            role,
+            name: req.body.name || ''
         }).returning('id'); // PG returns array of objects/ids, knex sqlite handles it generally
 
         // Handle Knex varying return types for inserts
         const userId = typeof id === 'object' ? id.id : id;
 
-        const user = { id: userId, email, role };
+        const user = { id: userId, email, role, name: req.body.name || '' };
         const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
 
         res.status(201).json({
@@ -71,7 +72,8 @@ router.post('/login', async (req, res) => {
             email: user.email,
             role: user.role,
             max_qrs: user.max_qrs,
-            has_enterprise: !!user.has_enterprise
+            has_enterprise: !!user.has_enterprise,
+            name: user.name
         };
         const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
 
@@ -83,7 +85,8 @@ router.post('/login', async (req, res) => {
                 email: user.email,
                 role: user.role,
                 max_qrs: user.max_qrs,
-                has_enterprise: !!user.has_enterprise
+                has_enterprise: !!user.has_enterprise,
+                name: user.name
             }
         });
 
@@ -97,6 +100,38 @@ router.post('/login', async (req, res) => {
 router.get('/me', authenticateToken, (req, res) => {
     // Return user info from token (or DB if more data needed)
     res.json(req.user);
+});
+
+// UPDATE PROFILE
+router.put('/update', authenticateToken, async (req, res) => {
+    const { name, email } = req.body;
+    try {
+        const updates = {};
+        if (name !== undefined) updates.name = name;
+        if (email !== undefined) updates.email = email;
+
+        if (Object.keys(updates).length > 0) {
+            await db('users').where({ id: req.user.id }).update(updates);
+
+            const updatedUser = await db('users').where({ id: req.user.id }).first();
+            const tokenPayload = {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                max_qrs: updatedUser.max_qrs,
+                has_enterprise: !!updatedUser.has_enterprise,
+                name: updatedUser.name
+            };
+            const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '24h' });
+
+            res.json({ success: true, user: tokenPayload, token });
+        } else {
+            res.json({ success: true, message: 'No changes' });
+        }
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Update failed' });
+    }
 });
 
 module.exports = router;
