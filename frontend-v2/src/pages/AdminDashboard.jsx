@@ -11,6 +11,7 @@ export default function AdminDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
+    const [selectedMessage, setSelectedMessage] = useState(null);
     const [dbError, setDbError] = useState(false);
     const { user } = useAuth();
 
@@ -228,7 +229,11 @@ export default function AdminDashboard() {
                     ) : (
                         <div className="divide-y divide-slate-100 dark:divide-slate-700">
                             {messages.map(msg => (
-                                <div key={msg.id} className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${!msg.is_read ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                                <div
+                                    key={msg.id}
+                                    onClick={() => { setSelectedMessage(msg); if (!msg.is_read) handleMarkRead(msg.id); }}
+                                    className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer ${!msg.is_read ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}
+                                >
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="flex items-center gap-2">
                                             <span className="font-bold text-slate-900 dark:text-white">{msg.email}</span>
@@ -238,16 +243,8 @@ export default function AdminDashboard() {
                                         </div>
                                         <span className="text-xs text-slate-400">{new Date(msg.created_at).toLocaleString()}</span>
                                     </div>
-                                    <p className="text-slate-600 dark:text-slate-300 text-sm mb-3">{msg.message}</p>
-                                    <div className="flex gap-3">
-                                        {!msg.is_read && (
-                                            <button
-                                                onClick={() => handleMarkRead(msg.id)}
-                                                className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
-                                            >
-                                                <CheckCircle size={14} /> Mark as Read
-                                            </button>
-                                        )}
+                                    <p className="text-slate-600 dark:text-slate-300 text-sm mb-3 line-clamp-2">{msg.message}</p>
+                                    <div className="flex gap-3" onClick={(e) => e.stopPropagation()}>
                                         <button
                                             onClick={() => handleDeleteMessage(msg.id)}
                                             className="text-xs font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
@@ -261,6 +258,61 @@ export default function AdminDashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Message View Modal (Glassmorphism) */}
+            {selectedMessage && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+                    <div className="relative w-full max-w-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-2xl border border-white/20 dark:border-slate-700/50 overflow-hidden transform transition-all">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-slate-200/50 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-100/50 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                    <MessageSquare size={20} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Message Details</h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">From: {selectedMessage.email}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedMessage(null)}
+                                className="p-2 hover:bg-slate-100/50 dark:hover:bg-slate-700/50 rounded-full transition-colors text-slate-500 dark:text-slate-400"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8 max-h-[60vh] overflow-y-auto">
+                            <p className="text-slate-700 dark:text-slate-300 text-base leading-relaxed whitespace-pre-wrap">
+                                {selectedMessage.message}
+                            </p>
+                            <p className="mt-6 text-xs text-slate-400 dark:text-slate-500 font-mono">
+                                Sent: {new Date(selectedMessage.created_at).toLocaleString()}
+                            </p>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-200/50 dark:border-slate-700/50 flex justify-end gap-3">
+                            <button
+                                onClick={() => {
+                                    handleDeleteMessage(selectedMessage.id);
+                                    setSelectedMessage(null);
+                                }}
+                                className="px-4 py-2 bg-red-100/50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg font-bold transition-colors flex items-center gap-2"
+                            >
+                                <Trash2 size={16} /> Delete Message
+                            </button>
+                            <button
+                                onClick={() => setSelectedMessage(null)}
+                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold shadow-lg shadow-indigo-500/20"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Users Table */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
