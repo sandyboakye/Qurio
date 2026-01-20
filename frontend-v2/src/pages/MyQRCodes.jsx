@@ -16,17 +16,17 @@ function ViewModal({ qr, onClose }) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+                className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
                 onClick={e => e.stopPropagation()}
             >
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <X size={24} />
                 </button>
 
-                <h3 className="text-xl font-bold text-slate-900 mb-1">{qr.name}</h3>
-                <p className="text-sm text-slate-500 mb-6">Scan to visit: <br /><a href={qr.currentUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline break-all">{qr.currentUrl}</a></p>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">{qr.name}</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Scan to visit: <br /><a href={qr.currentUrl} target="_blank" rel="noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline break-all">{qr.currentUrl}</a></p>
 
-                <div className="bg-white border-2 border-slate-100 rounded-xl p-4 mb-6 flex justify-center">
+                <div className="bg-white border-2 border-slate-100 dark:border-slate-700 rounded-xl p-4 mb-6 flex justify-center">
                     <img src={qr.qrImageUrl} alt={qr.name} className="w-64 h-64 object-contain" />
                 </div>
 
@@ -69,60 +69,60 @@ function EditModal({ qr, onClose, onSave }) {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
+                className="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl relative"
                 onClick={e => e.stopPropagation()}
             >
-                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+                <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <X size={24} />
                 </button>
 
-                <h3 className="text-xl font-bold text-slate-900 mb-6">Edit QR Code</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6">Edit QR Code</h3>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Destination URL</label>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Destination URL</label>
                         <input
                             type="url"
                             required
                             value={url}
                             onChange={e => setUrl(e.target.value)}
-                            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-4 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
 
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Foreground</label>
-                            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">Foreground</label>
+                            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                                 <input
                                     type="color"
                                     value={colorDark}
                                     onChange={e => setColorDark(e.target.value)}
                                     className="w-8 h-8 rounded cursor-pointer border-0 p-0"
                                 />
-                                <span className="text-xs font-mono text-slate-500">{colorDark}</span>
+                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">{colorDark}</span>
                             </div>
                         </div>
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-slate-500 mb-1 uppercase">Background</label>
-                            <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase">Background</label>
+                            <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                                 <input
                                     type="color"
                                     value={colorLight}
                                     onChange={e => setColorLight(e.target.value)}
                                     className="w-8 h-8 rounded cursor-pointer border-0 p-0"
                                 />
-                                <span className="text-xs font-mono text-slate-500">{colorLight}</span>
+                                <span className="text-xs font-mono text-slate-500 dark:text-slate-400">{colorLight}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                        <span className="text-sm font-medium text-slate-700">Active Status</span>
+                    <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Active Status</span>
                         <button
                             type="button"
                             onClick={() => setIsActive(!isActive)}
-                            className={`w-12 h-6 rounded-full transition-colors relative ${isActive ? 'bg-emerald-500' : 'bg-slate-300'}`}
+                            className={`w-12 h-6 rounded-full transition-colors relative ${isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
                         >
                             <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${isActive ? 'left-7' : 'left-1'}`} />
                         </button>
@@ -181,9 +181,9 @@ export default function MyQRCodes() {
         onSuccess: () => queryClient.invalidateQueries(['qrs'])
     });
 
-    if (isLoading) return <div className="text-center py-20 text-slate-500">Loading QR Codes...</div>;
+    if (isLoading) return <div className="text-center py-20 text-slate-500 dark:text-slate-400">Loading QR Codes...</div>;
     if (isError) return (
-        <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+        <div className="p-4 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg">
             Error loading data: {error.message}. Is the backend running?
         </div>
     );
@@ -197,8 +197,8 @@ export default function MyQRCodes() {
 
             <div>
                 <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-slate-800">My QR Codes</h2>
-                    <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-sm font-medium">
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white">My QR Codes</h2>
+                    <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-3 py-1 rounded-full text-sm font-medium">
                         {qrs?.length || 0} Active
                     </span>
                 </div>
@@ -210,11 +210,11 @@ export default function MyQRCodes() {
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: index * 0.05 }}
-                            className={`bg-white rounded-2xl p-6 shadow-sm border ${qr.isActive ? 'border-slate-100' : 'border-slate-200 bg-slate-50 opacity-75'} hover:shadow-md transition-all group relative`}
+                            className={`bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border ${qr.isActive ? 'border-slate-100 dark:border-slate-700' : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 opacity-75'} hover:shadow-md transition-all group relative`}
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div
-                                    className="h-12 w-12 bg-white rounded-lg p-1 border border-slate-100 cursor-pointer"
+                                    className="h-12 w-12 bg-white dark:bg-slate-700 rounded-lg p-1 border border-slate-100 dark:border-slate-600 cursor-pointer"
                                     onClick={() => setSelectedQr(qr)}
                                 >
                                     <img src={qr.qrImageUrl} alt="QR" className="w-full h-full object-contain" />
@@ -222,21 +222,21 @@ export default function MyQRCodes() {
                                 <div className="flex gap-1">
                                     <button
                                         onClick={() => setSelectedQr(qr)}
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600"
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                         title="View"
                                     >
                                         <Eye size={16} />
                                     </button>
                                     <button
                                         onClick={() => navigate(`/analytics/${qr.id}`)}
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600"
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                         title="Analytics"
                                     >
                                         <BarChart2 size={16} />
                                     </button>
                                     <button
                                         onClick={() => setEditingQr(qr)}
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-indigo-600"
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
                                         title="Edit"
                                     >
                                         <Edit2 size={16} />
@@ -248,14 +248,14 @@ export default function MyQRCodes() {
                                             link.href = qr.qrImageUrl;
                                             link.click();
                                         }}
-                                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600"
+                                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
                                         title="Download"
                                     >
                                         <Download size={16} />
                                     </button>
                                     <button
                                         onClick={() => deleteMutation.mutate(qr.id)}
-                                        className="p-2 hover:bg-red-50 rounded-lg text-slate-400 hover:text-red-600"
+                                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400"
                                         title="Delete"
                                     >
                                         <Trash2 size={16} />
@@ -263,18 +263,18 @@ export default function MyQRCodes() {
                                 </div>
                             </div>
 
-                            <h3 className="font-bold text-slate-900 mb-1">{qr.name}</h3>
-                            <p className="text-xs text-slate-400 font-mono mb-4">{qr.shortCode}</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white mb-1">{qr.name}</h3>
+                            <p className="text-xs text-slate-400 dark:text-slate-500 font-mono mb-4">{qr.shortCode}</p>
 
-                            <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 truncate mb-4 flex items-center gap-2">
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 text-sm text-slate-600 dark:text-slate-300 truncate mb-4 flex items-center gap-2">
                                 <ExternalLink size={14} className="flex-shrink-0" />
-                                <a href={qr.currentUrl} target="_blank" rel="noreferrer" className="truncate hover:text-indigo-600 hover:underline">{qr.currentUrl}</a>
+                                <a href={qr.currentUrl} target="_blank" rel="noreferrer" className="truncate hover:text-indigo-600 dark:hover:text-indigo-400 hover:underline">{qr.currentUrl}</a>
                             </div>
 
-                            <div className="flex justify-between items-center pt-4 border-t border-slate-50">
-                                <span className="text-xs text-slate-400 shadow-sm">Created {new Date(qr.createdAt).toLocaleDateString()}</span>
+                            <div className="flex justify-between items-center pt-4 border-t border-slate-50 dark:border-slate-700">
+                                <span className="text-xs text-slate-400 dark:text-slate-500 shadow-sm">Created {new Date(qr.createdAt).toLocaleDateString()}</span>
                                 {!qr.isActive && (
-                                    <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">Inactive</span>
+                                    <span className="bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide">Inactive</span>
                                 )}
                             </div>
                         </motion.div>
@@ -283,11 +283,11 @@ export default function MyQRCodes() {
 
                 {qrs?.length === 0 && (
                     <div className="text-center py-20">
-                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                        <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 dark:text-slate-500">
                             <QrCode size={32} />
                         </div>
-                        <h3 className="text-slate-900 font-bold mb-2">No QR Codes Yet</h3>
-                        <p className="text-slate-500">Create your first campaign to get started.</p>
+                        <h3 className="text-slate-900 dark:text-white font-bold mb-2">No QR Codes Yet</h3>
+                        <p className="text-slate-500 dark:text-slate-400">Create your first campaign to get started.</p>
                     </div>
                 )}
             </div>

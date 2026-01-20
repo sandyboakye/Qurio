@@ -1,0 +1,27 @@
+{
+    "functions": {
+        "source": "backend-v2/functions"
+    },
+    "hosting": {
+        "public": "frontend-v2/dist",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "/api/**",
+                "function": "api"
+            },
+            {
+                "source": "/r/**",
+                "function": "api"
+            },
+            {
+                "source": "**",
+                "destination": "/index.html"
+            }
+        ]
+    }
+}

@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900;
+    @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-50;
   }
+}
+
+/* Fallback for Dark Mode */
+html.dark body {
+  background-color: #0f172a;
+  color: #f8fafc;
 }
 
 @media print {

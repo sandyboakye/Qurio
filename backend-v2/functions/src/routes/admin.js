@@ -150,17 +150,6 @@ router.put('/messages/:id/read', async (req, res) => {
     }
 });
 
-// DELETE /api/admin/messages/:id - Delete a message
-router.delete('/messages/:id', async (req, res) => {
-    try {
-        const count = await db('support_messages').where({ id: req.params.id }).del();
-        if (count === 0) return res.status(404).json({ error: 'Message not found' });
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: 'DB Error' });
-    }
-});
-
 // POST /api/admin/migrate-support - Emergency Manual Migration Endpoint
 router.post('/migrate-support', async (req, res) => {
     try {

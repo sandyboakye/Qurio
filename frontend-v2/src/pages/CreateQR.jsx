@@ -73,17 +73,17 @@ export default function CreateQR() {
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 sticky top-8"
+                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 p-6 sticky top-8"
                     >
-                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <Eye size={16} /> Live Preview
                         </h3>
 
-                        <div className="aspect-square bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: formData.colorLight }}>
+                        <div className="aspect-square bg-slate-50 dark:bg-slate-900/50 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden relative transition-colors duration-300" style={{ backgroundColor: formData.colorLight }}>
                             {previewImage ? (
                                 <img src={previewImage} alt="Preview" className="w-full h-full object-contain p-4 transition-all duration-300" />
                             ) : (
-                                <div className="text-center text-slate-300">
+                                <div className="text-center text-slate-300 dark:text-slate-600">
                                     <QrCode size={48} className="mx-auto mb-2 opacity-50" />
                                     <span className="text-xs">Preview Area</span>
                                 </div>
@@ -102,7 +102,7 @@ export default function CreateQR() {
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden"
+                        className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden"
                     >
                         <div className="bg-gradient-to-r from-indigo-600 to-violet-600 p-8 text-white">
                             <h2 className="text-2xl font-bold mb-2">Create New QR Code</h2>
@@ -119,40 +119,40 @@ export default function CreateQR() {
                             <form onSubmit={handleSubmit} className="space-y-8">
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Campaign Name</label>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Campaign Name</label>
                                         <input
                                             type="text"
                                             value={formData.name}
                                             onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
+                                            className="w-full px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
                                             placeholder="e.g. Summer Promo 2026"
                                         />
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold text-slate-700 mb-2">Destination URL</label>
+                                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Destination URL</label>
                                         <div className="relative">
                                             <Link className="absolute left-4 top-3.5 text-slate-400" size={20} />
                                             <input
                                                 type="url"
                                                 value={formData.url}
                                                 onChange={e => setFormData({ ...formData, url: e.target.value })}
-                                                className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
+                                                className="w-full pl-12 pr-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
                                                 placeholder="https://example.com/landing-page"
                                             />
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="p-6 bg-slate-50 rounded-xl border border-slate-100">
+                                <div className="p-6 bg-slate-50 dark:bg-slate-900/30 rounded-xl border border-slate-100 dark:border-slate-700">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <Palette className="text-indigo-600" size={20} />
-                                        <h3 className="font-bold text-slate-800">Design & Colors</h3>
+                                        <Palette className="text-indigo-600 dark:text-indigo-400" size={20} />
+                                        <h3 className="font-bold text-slate-800 dark:text-white">Design & Colors</h3>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Foreground Color</label>
+                                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Foreground Color</label>
                                             <div className="flex items-center gap-3">
                                                 <input
                                                     type="color"
@@ -160,11 +160,11 @@ export default function CreateQR() {
                                                     onChange={e => setFormData({ ...formData, colorDark: e.target.value })}
                                                     className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0"
                                                 />
-                                                <span className="text-sm font-mono text-slate-600 uppercase">{formData.colorDark}</span>
+                                                <span className="text-sm font-mono text-slate-600 dark:text-slate-400 uppercase">{formData.colorDark}</span>
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-500 mb-2 uppercase tracking-wide">Background Color</label>
+                                            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wide">Background Color</label>
                                             <div className="flex items-center gap-3">
                                                 <input
                                                     type="color"
@@ -172,7 +172,7 @@ export default function CreateQR() {
                                                     onChange={e => setFormData({ ...formData, colorLight: e.target.value })}
                                                     className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0"
                                                 />
-                                                <span className="text-sm font-mono text-slate-600 uppercase">{formData.colorLight}</span>
+                                                <span className="text-sm font-mono text-slate-600 dark:text-slate-400 uppercase">{formData.colorLight}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -181,7 +181,7 @@ export default function CreateQR() {
                                 <button
                                     type="submit"
                                     disabled={createMutation.isPending}
-                                    className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition-colors flex items-center justify-center gap-2"
+                                    className="w-full bg-slate-900 dark:bg-slate-700 text-white py-4 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors flex items-center justify-center gap-2"
                                 >
                                     {createMutation.isPending ? (
                                         <>

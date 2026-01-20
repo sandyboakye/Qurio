@@ -131,26 +131,26 @@ export default function BarcodeGenerator() {
         <div className="max-w-5xl mx-auto py-10">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                    <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
                         <ScanBarcode size={24} />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900">Barcode Generator</h1>
-                        <p className="text-slate-500 text-sm">Create standard barcodes for inventory and retail.</p>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Barcode Generator</h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">Create standard barcodes for inventory and retail.</p>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex bg-slate-100 p-1 rounded-xl">
+                <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-xl">
                     <button
                         onClick={() => setActiveTab('single')}
-                        className={"px-4 py-2 text-sm font-bold rounded-lg transition-all " + (activeTab === 'single' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                        className={"px-4 py-2 text-sm font-bold rounded-lg transition-all " + (activeTab === 'single' ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}
                     >
                         Single
                     </button>
                     <button
                         onClick={() => setActiveTab('bulk')}
-                        className={"px-4 py-2 text-sm font-bold rounded-lg transition-all " + (activeTab === 'bulk' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+                        className={"px-4 py-2 text-sm font-bold rounded-lg transition-all " + (activeTab === 'bulk' ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200')}
                     >
                         Bulk Creation
                     </button>
@@ -163,31 +163,31 @@ export default function BarcodeGenerator() {
                     layout
                     className="md:col-span-1 space-y-6"
                 >
-                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div className="flex items-center gap-2 text-slate-800 font-bold border-b pb-2 mb-2">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 text-slate-800 dark:text-white font-bold border-b border-slate-100 dark:border-slate-700 pb-2 mb-2">
                             <Settings size={18} /> Configuration
                         </div>
 
                         {/* Only show Value input in Single Mode */}
                         {activeTab === 'single' && (
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Value</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Value</label>
                                 <input
                                     type="text"
                                     value={value}
                                     onChange={(e) => setValue(e.target.value)}
-                                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
+                                    className="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm"
                                     placeholder="Enter data..."
                                 />
                             </div>
                         )}
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">Format</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Format</label>
                             <select
                                 value={format}
                                 onChange={(e) => setFormat(e.target.value)}
-                                className="w-full p-2 border rounded-lg bg-slate-50 text-sm"
+                                className="w-full p-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white text-sm"
                             >
                                 <option value="CODE128">Code 128 (Standard)</option>
                                 <option value="UPC">UPC (Retail)</option>
@@ -199,7 +199,7 @@ export default function BarcodeGenerator() {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Width ({width})</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Width ({width})</label>
                                 <input
                                     type="range" min="1" max="4" step="0.5"
                                     value={width}
@@ -208,7 +208,7 @@ export default function BarcodeGenerator() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 mb-1">Height ({height})</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Height ({height})</label>
                                 <input
                                     type="range" min="30" max="150"
                                     value={height}
@@ -225,7 +225,7 @@ export default function BarcodeGenerator() {
                                 onChange={(e) => setDisplayValue(e.target.checked)}
                                 className="rounded text-indigo-600"
                             />
-                            <label className="text-sm text-slate-600">Show Text</label>
+                            <label className="text-sm text-slate-600 dark:text-slate-300">Show Text</label>
                         </div>
                     </div>
 
@@ -233,7 +233,7 @@ export default function BarcodeGenerator() {
                     {activeTab === 'single' ? (
                         <button
                             onClick={handleDownloadSingle}
-                            className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2"
                         >
                             <Download size={18} />
                             Download PNG
@@ -242,7 +242,7 @@ export default function BarcodeGenerator() {
                         <button
                             onClick={handleBulkGenerate}
                             disabled={isProcessing || !bulkInput}
-                            className={"w-full py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 " + (isProcessing || !bulkInput ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200')}
+                            className={"w-full py-3 font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 " + (isProcessing || !bulkInput ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 cursor-not-allowed' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-emerald-200 dark:shadow-none')}
                         >
                             {isProcessing ? <Loader2 className="animate-spin" size={18} /> : <Layers size={18} />}
                             {isProcessing ? 'Generating Zip...' : 'Generate Bulk Zip'}
@@ -259,7 +259,7 @@ export default function BarcodeGenerator() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-slate-100 rounded-3xl flex items-center justify-center p-10 border border-slate-200 min-h-[400px]"
+                                className="bg-slate-100 dark:bg-slate-900 rounded-3xl flex items-center justify-center p-10 border border-slate-200 dark:border-slate-800 min-h-[400px]"
                             >
                                 <div className="bg-white p-8 rounded-xl shadow-sm barcode-container overflow-hidden max-w-full text-center">
                                     <Barcode
@@ -279,16 +279,16 @@ export default function BarcodeGenerator() {
                                 initial={{ opacity: 0, x: 20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}
-                                className="bg-white rounded-3xl p-8 border border-slate-200 min-h-[400px]"
+                                className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-200 dark:border-slate-700 min-h-[400px]"
                             >
                                 <div className="mb-6">
-                                    <h3 className="text-lg font-bold text-slate-800 mb-2">Bulk Input</h3>
-                                    <p className="text-slate-500 text-sm mb-4">Enter barcode values separated by commas or new lines. You can also paste from Excel.</p>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Bulk Input</h3>
+                                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Enter barcode values separated by commas or new lines. You can also paste from Excel.</p>
 
                                     <textarea
                                         value={bulkInput}
                                         onChange={(e) => setBulkInput(e.target.value)}
-                                        className="w-full h-48 p-4 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm bg-slate-50"
+                                        className="w-full h-48 p-4 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-sm bg-slate-50 dark:bg-slate-700 dark:text-white"
                                         placeholder="1001&#10;1002&#10;1003&#10;..."
                                     />
                                 </div>
@@ -304,19 +304,19 @@ export default function BarcodeGenerator() {
                                         />
                                         <label
                                             htmlFor="bulk-file-upload"
-                                            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg cursor-pointer text-sm font-bold flex items-center gap-2 transition-colors"
+                                            className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg cursor-pointer text-sm font-bold flex items-center gap-2 transition-colors"
                                         >
                                             <FileText size={16} />
                                             Import from File (CSV/TXT)
                                         </label>
                                     </div>
-                                    <div className="text-xs text-slate-400">
+                                    <div className="text-xs text-slate-400 dark:text-slate-500">
                                         Supports .csv or .txt files
                                     </div>
                                 </div>
 
                                 {bulkStatus && (
-                                    <div className="mt-6 p-4 bg-emerald-50 text-emerald-800 rounded-xl flex items-center gap-2 text-sm font-medium">
+                                    <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 rounded-xl flex items-center gap-2 text-sm font-medium">
                                         <CheckCircle size={16} />
                                         {bulkStatus}
                                     </div>

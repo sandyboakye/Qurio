@@ -73,14 +73,14 @@ export default function GlobalAnalytics() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setSelectedStat(type)}
-            className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm cursor-pointer relative overflow-hidden group"
+            className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm cursor-pointer relative overflow-hidden group"
         >
             <div className={`absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity ${color}`}>
                 <Activity size={48} />
             </div>
-            <div className="text-sm text-slate-500 font-bold uppercase mb-1">{title}</div>
-            <div className="text-3xl font-bold text-slate-800">{value}</div>
-            <div className="text-xs text-indigo-500 mt-2 font-medium flex items-center gap-1">
+            <div className="text-sm text-slate-500 dark:text-slate-400 font-bold uppercase mb-1">{title}</div>
+            <div className="text-3xl font-bold text-slate-800 dark:text-white">{value}</div>
+            <div className="text-xs text-indigo-500 dark:text-indigo-400 mt-2 font-medium flex items-center gap-1">
                 View Details <TrendingUp size={12} />
             </div>
         </motion.div>
@@ -102,24 +102,24 @@ export default function GlobalAnalytics() {
 
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                        <TrendingUp className="text-indigo-600" />
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                        <TrendingUp className="text-indigo-600 dark:text-indigo-400" />
                         Detailed Analytics
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">Comprehensive view of all QR code performance across the platform.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Comprehensive view of all QR code performance across the platform.</p>
                 </div>
 
                 <div className="flex items-center gap-2 print:hidden">
                     <button
                         onClick={() => window.print()}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-indigo-600 transition-colors text-sm font-medium shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-sm font-medium shadow-sm"
                     >
                         <FileText size={16} />
                         Save as PDF
                     </button>
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md shadow-indigo-200"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md shadow-indigo-200 dark:shadow-none"
                     >
                         <Download size={16} />
                         Export CSV
@@ -141,11 +141,11 @@ export default function GlobalAnalytics() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 print:col-span-2 print:p-4 print:h-[200px]"
+                    className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:col-span-2 print:p-4 print:h-[200px]"
                 >
                     <div className="flex items-center gap-2 mb-6 print:mb-2">
-                        <Clock className="text-indigo-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Time of Day Activity</h2>
+                        <Clock className="text-indigo-600 dark:text-indigo-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Time of Day Activity</h2>
                     </div>
                     <div className="h-[250px] w-full print:h-[140px]">
                         {scansByHour && scansByHour.some(h => h.count > 0) ? (
@@ -177,11 +177,11 @@ export default function GlobalAnalytics() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 print:col-span-1 print:p-4 print:h-[200px]"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:col-span-1 print:p-4 print:h-[200px]"
                 >
                     <div className="flex items-center gap-2 mb-6 print:mb-2">
                         <Activity className="text-pink-500" size={20} />
-                        <h2 className="font-bold text-slate-700">Daily Trend</h2>
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Daily Trend</h2>
                     </div>
                     <div className="h-[250px] w-full print:h-[140px]">
                         <ResponsiveContainer width="100%" height="100%">
@@ -198,11 +198,11 @@ export default function GlobalAnalytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 print:col-span-1 print:p-4 print:h-[220px]"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:col-span-1 print:p-4 print:h-[220px]"
                 >
                     <div className="flex items-center gap-2 mb-4 print:mb-2">
-                        <Smartphone className="text-purple-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Devices</h2>
+                        <Smartphone className="text-purple-600 dark:text-purple-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Devices</h2>
                     </div>
                     <div className="h-[200px] flex items-center justify-center print:h-[140px]">
                         {devices.length > 0 ? (
@@ -233,11 +233,11 @@ export default function GlobalAnalytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 print:col-span-1 print:p-4 print:h-[220px]"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:col-span-1 print:p-4 print:h-[220px]"
                 >
                     <div className="flex items-center gap-2 mb-4 print:mb-2">
-                        <Monitor className="text-pink-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Operating System</h2>
+                        <Monitor className="text-pink-600 dark:text-pink-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Operating System</h2>
                     </div>
                     <div className="h-[200px] flex items-center justify-center print:h-[140px]">
                         {os.length > 0 ? (
@@ -268,14 +268,14 @@ export default function GlobalAnalytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 print:col-span-1 print:p-4 print:h-[220px]"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 print:col-span-1 print:p-4 print:h-[220px]"
                 >
                     <div className="flex items-center gap-2 mb-4 print:mb-2">
-                        <Globe className="text-emerald-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Location Preview</h2>
+                        <Globe className="text-emerald-600 dark:text-emerald-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Location Preview</h2>
                     </div>
-                    <div className="text-center py-8 text-slate-500 text-sm">
-                        <MapPin size={32} className="mx-auto mb-2 text-emerald-200" />
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400 text-sm">
+                        <MapPin size={32} className="mx-auto mb-2 text-emerald-200 dark:text-emerald-800" />
                         See "Total Scans" for details
                     </div>
                 </motion.div>
@@ -302,10 +302,10 @@ export default function GlobalAnalytics() {
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
+                            className="bg-white/90 dark:bg-slate-800/95 backdrop-blur-xl border border-white/20 dark:border-slate-700 shadow-2xl rounded-3xl w-full max-w-2xl max-h-[80vh] overflow-hidden flex flex-col"
                         >
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-                                <h3 className="text-xl font-bold text-slate-800">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-white/50 dark:bg-slate-900/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-white">
                                     {selectedStat === 'scans' && 'Recent Scans Log'}
                                     {selectedStat === 'qrs' && 'All QR Codes'}
                                     {selectedStat === 'active' && 'Active Campaigns'}
@@ -330,23 +330,23 @@ export default function GlobalAnalytics() {
                                 {selectedStat === 'scans' && (
                                     <div className="space-y-4">
                                         {lists?.recentScans?.map((scan, i) => (
-                                            <div key={i} className="flex items-center justify-between p-4 bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                            <div key={i} className="flex items-center justify-between p-4 bg-white dark:bg-slate-700 rounded-xl border border-slate-100 dark:border-slate-600 shadow-sm hover:shadow-md transition-shadow">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-bold">
+                                                    <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center font-bold">
                                                         {scan.country?.substring(0, 2).toUpperCase() || 'NA'}
                                                     </div>
                                                     <div>
-                                                        <div className="font-bold text-slate-800">{scan.qr_name}</div>
-                                                        <div className="text-xs text-slate-500 flex items-center gap-1">
+                                                        <div className="font-bold text-slate-800 dark:text-white">{scan.qr_name}</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                                             <MapPin size={10} /> {scan.city || 'Unknown'}, {scan.country || 'Unknown'}
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xs font-mono text-slate-400">
+                                                    <div className="text-xs font-mono text-slate-400 dark:text-slate-500">
                                                         {new Date(scan.scanned_at).toLocaleTimeString()}
                                                     </div>
-                                                    <div className="text-[10px] text-slate-300">
+                                                    <div className="text-[10px] text-slate-300 dark:text-slate-600">
                                                         {new Date(scan.scanned_at).toLocaleDateString()}
                                                     </div>
                                                 </div>

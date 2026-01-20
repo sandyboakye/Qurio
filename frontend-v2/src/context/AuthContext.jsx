@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
     }, []);
 
+
     const login = async (email, password) => {
         const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/login`, {
             email,
@@ -35,6 +36,21 @@ export function AuthProvider({ children }) {
         setUser(user);
         return user;
     };
+
+    const firebaseLogin = async (idToken) => {
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/firebase`, {
+            idToken,
+        });
+
+        const { token, user } = response.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+        return user;
+    };
+
 
     const register = async (email, password) => {
         const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/auth/register`, {
@@ -58,8 +74,15 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
+    const updateAuthState = (user, token) => {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setUser(user);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, firebaseLogin, register, logout, loading, updateAuthState }}>
             {!loading && children}
         </AuthContext.Provider>
     );

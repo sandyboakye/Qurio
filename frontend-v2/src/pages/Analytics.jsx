@@ -77,25 +77,25 @@ export default function Analytics() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
                 <div className="flex items-center gap-4">
-                    <Link to="/list" className="p-2 hover:bg-slate-100 rounded-full transition-colors print:hidden">
-                        <ArrowLeft size={24} className="text-slate-600" />
+                    <Link to="/list" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors print:hidden">
+                        <ArrowLeft size={24} className="text-slate-600 dark:text-slate-300" />
                     </Link>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800">Campaign Analytics</h1>
-                        <p className="text-slate-500 text-sm">Detailed performance metrics</p>
+                        <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Campaign Analytics</h1>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm">Detailed performance metrics</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={() => window.print()}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-indigo-600 transition-colors text-sm font-medium shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-200 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-sm font-medium shadow-sm"
                     >
                         <FileText size={16} />
                         Save PDF
                     </button>
                     <button
                         onClick={handleExportCSV}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md shadow-indigo-200"
+                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md shadow-indigo-200 dark:shadow-none"
                     >
                         <Download size={16} />
                         Export CSV
@@ -110,11 +110,11 @@ export default function Analytics() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
+                    className="lg:col-span-3 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700"
                 >
                     <div className="flex items-center gap-2 mb-6">
-                        <Activity className="text-indigo-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Scan Activity (Last 30 Days)</h2>
+                        <Activity className="text-indigo-600 dark:text-indigo-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Scan Activity (Last 30 Days)</h2>
                     </div>
 
                     <div className="h-[300px] w-full">
@@ -144,11 +144,11 @@ export default function Analytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700"
                 >
                     <div className="flex items-center gap-2 mb-4">
-                        <Smartphone className="text-purple-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Devices</h2>
+                        <Smartphone className="text-purple-600 dark:text-purple-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Devices</h2>
                     </div>
                     <div className="h-[200px] flex items-center justify-center">
                         {devices.length > 0 ? (
@@ -166,7 +166,7 @@ export default function Analytics() {
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center mt-4">
                         {devices.map((d, i) => (
-                            <div key={i} className="flex items-center gap-1 text-xs text-slate-600">
+                            <div key={i} className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                                 {d.name.toUpperCase()} ({d.value})
                             </div>
@@ -179,11 +179,11 @@ export default function Analytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700"
                 >
                     <div className="flex items-center gap-2 mb-4">
-                        <Monitor className="text-pink-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Operating System</h2>
+                        <Monitor className="text-pink-600 dark:text-pink-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Operating System</h2>
                     </div>
                     <div className="h-[200px] flex items-center justify-center">
                         {os.length > 0 ? (
@@ -201,7 +201,7 @@ export default function Analytics() {
                     </div>
                     <div className="flex flex-wrap gap-2 justify-center mt-4">
                         {os.map((d, i) => (
-                            <div key={i} className="flex items-center gap-1 text-xs text-slate-600">
+                            <div key={i} className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                                 {d.name} ({d.value})
                             </div>
@@ -214,27 +214,27 @@ export default function Analytics() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3 }}
-                    className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"
+                    className="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700"
                 >
                     <div className="flex items-center gap-2 mb-4">
-                        <Globe className="text-emerald-600" size={20} />
-                        <h2 className="font-bold text-slate-700">Browsers</h2>
+                        <Globe className="text-emerald-600 dark:text-emerald-400" size={20} />
+                        <h2 className="font-bold text-slate-700 dark:text-slate-200">Browsers</h2>
                     </div>
                     <div className="space-y-3">
                         {browsers.length > 0 ? browsers.map((b, i) => (
                             <div key={i} className="relative">
-                                <div className="flex justify-between text-xs font-medium text-slate-600 mb-1 z-10 relative">
+                                <div className="flex justify-between text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 z-10 relative">
                                     <span>{b.name}</span>
                                     <span>{b.value}</span>
                                 </div>
-                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-emerald-500 rounded-full"
                                         style={{ width: `${(b.value / Math.max(...browsers.map(x => x.value))) * 100}%` }}
                                     />
                                 </div>
                             </div>
-                        )) : <div className="text-center py-10 text-slate-400 text-sm">No Data</div>}
+                        )) : <div className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm">No Data</div>}
                     </div>
                 </motion.div>
 
